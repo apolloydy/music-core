@@ -49,15 +49,19 @@ export default function MetronomePanel({ copy }: MetronomePanelProps) {
       return;
     }
 
-    void ensureAudioContext().then((audioContext) => {
-      nextNoteTimeRef.current = audioContext.currentTime + 0.05;
-      currentStepRef.current = 0;
-      setActiveStep(0);
+    const audioContext = audioContextRef.current;
 
-      schedulerRef.current = window.setInterval(() => {
-        scheduleNotes();
-      }, lookaheadMsRef.current);
-    });
+    if (!audioContext) {
+      return;
+    }
+
+    nextNoteTimeRef.current = audioContext.currentTime + 0.05;
+    currentStepRef.current = 0;
+    setActiveStep(0);
+
+    schedulerRef.current = window.setInterval(() => {
+      scheduleNotes();
+    }, lookaheadMsRef.current);
 
     return () => {
       if (schedulerRef.current !== null) {
@@ -76,18 +80,6 @@ export default function MetronomePanel({ copy }: MetronomePanelProps) {
       audioContextRef.current?.close().catch(() => undefined);
     };
   }, []);
-
-  async function ensureAudioContext() {
-    if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContext();
-    }
-
-    if (audioContextRef.current.state === "suspended") {
-      await audioContextRef.current.resume();
-    }
-
-    return audioContextRef.current;
-  }
 
   function scheduleNotes() {
     const audioContext = audioContextRef.current;
@@ -233,7 +225,23 @@ export default function MetronomePanel({ copy }: MetronomePanelProps) {
           </button>
           <button
             className={`transport-button ${isRunning ? "is-live" : ""}`}
-            onClick={() => setIsRunning((value) => !value)}
+            onClick={() => {
+              if (isRunning) {
+                setIsRunning(false);
+                return;
+              }
+              // iOS WebKit requires AudioContext to be created and resumed
+              // synchronously inside a user gesture handler
+              if (!audioContextRef.current) {
+                audioContextRef.current = new AudioContext();
+              }
+              const ctx = audioContextRef.current;
+              if (ctx.state === "suspended") {
+                ctx.resume().then(() => setIsRunning(true)).catch(() => setIsRunning(true));
+              } else {
+                setIsRunning(true);
+              }
+            }}
             type="button"
           >
             {isRunning ? copy.stop : copy.start}
