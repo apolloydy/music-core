@@ -230,17 +230,17 @@ export default function MetronomePanel({ copy }: MetronomePanelProps) {
                 setIsRunning(false);
                 return;
               }
-              // iOS WebKit requires AudioContext to be created and resumed
-              // synchronously inside a user gesture handler
               if (!audioContextRef.current) {
                 audioContextRef.current = new AudioContext();
               }
               const ctx = audioContextRef.current;
-              if (ctx.state === "suspended") {
-                ctx.resume().then(() => setIsRunning(true)).catch(() => setIsRunning(true));
-              } else {
-                setIsRunning(true);
-              }
+              // Play a silent buffer to fully unlock audio on iOS WebKit
+              const silentBuffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+              const silentSource = ctx.createBufferSource();
+              silentSource.buffer = silentBuffer;
+              silentSource.connect(ctx.destination);
+              silentSource.start(0);
+              ctx.resume().then(() => setIsRunning(true)).catch(() => setIsRunning(true));
             }}
             type="button"
           >
