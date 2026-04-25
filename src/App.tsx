@@ -38,45 +38,7 @@ export default function App() {
         </div>
       </section>
 
-      <section className="hero-grid">
-        <article className="hero-card hero-copy">
-          <div>
-            <p className="eyebrow">{copy.heroEyebrow}</p>
-            <h1>{copy.heroTitle}</h1>
-            <p className="hero-text">{copy.heroDescription}</p>
-          </div>
-
-          <div className="metric-row">
-            {copy.p0Goals.map((goal) => (
-              <div className="metric-pill metric-copy" key={goal}>
-                <strong>{goal}</strong>
-              </div>
-            ))}
-          </div>
-        </article>
-
-        <article className="hero-card signal-panel">
-          <p className="panel-label">{copy.whyP0Exists}</p>
-          {copy.signalCards.map((item) => (
-            <div className="signal-card" key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-            </div>
-          ))}
-        </article>
-      </section>
-
       <MetronomePanel copy={copy.metronome} />
-
-      <section className="panel-grid compact-grid">
-        {copy.nextSystems.map((item) => (
-          <article className="panel-card phase-card" key={item.title}>
-            <p className="card-kicker">{copy.nextLabel}</p>
-            <h2>{item.title}</h2>
-            <p>{item.description}</p>
-          </article>
-        ))}
-      </section>
     </main>
   );
 }

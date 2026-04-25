@@ -22,6 +22,7 @@ export default function MetronomePanel({ copy }: MetronomePanelProps) {
     "medium",
     "medium",
   ]);
+  const totalSteps = beatsPerBar * subdivision;
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const schedulerRef = useRef<number | null>(null);
@@ -33,7 +34,7 @@ export default function MetronomePanel({ copy }: MetronomePanelProps) {
 
   useEffect(() => {
     setAccentPattern((current) =>
-      Array.from({ length: beatsPerBar }, (_, index) => {
+      Array.from({ length: totalSteps }, (_, index) => {
         if (current[index]) {
           return current[index];
         }
@@ -41,7 +42,7 @@ export default function MetronomePanel({ copy }: MetronomePanelProps) {
         return index === 0 ? "strong" : "medium";
       }),
     );
-  }, [beatsPerBar]);
+  }, [totalSteps]);
 
   useEffect(() => {
     if (!isRunning) {
@@ -99,14 +100,12 @@ export default function MetronomePanel({ copy }: MetronomePanelProps) {
       nextNoteTimeRef.current <
       audioContext.currentTime + scheduleWindowRef.current
     ) {
-      const totalSteps = beatsPerBar * subdivision;
       const step = currentStepRef.current % totalSteps;
-      const beatIndex = Math.floor(step / subdivision);
       const stepInBeat = step % subdivision;
-      const accent = accentPattern[beatIndex] ?? "medium";
+      const accent = accentPattern[step] ?? "medium";
       const isBeat = stepInBeat === 0;
 
-      if (accent !== "mute" || !isBeat) {
+      if (accent !== "mute") {
         triggerClick(audioContext, nextNoteTimeRef.current, {
           accent,
           isBeat,
@@ -182,13 +181,13 @@ export default function MetronomePanel({ copy }: MetronomePanelProps) {
     }
   }
 
-  function cycleAccent(beatIndex: number) {
+  function cycleAccent(stepIndex: number) {
     setAccentPattern((current) => {
       const next = [...current];
-      const currentLevel = next[beatIndex] ?? (beatIndex === 0 ? "strong" : "medium");
+      const currentLevel = next[stepIndex] ?? (stepIndex === 0 ? "strong" : "medium");
       const nextLevel =
         accentCycle[(accentCycle.indexOf(currentLevel) + 1) % accentCycle.length];
-      next[beatIndex] = nextLevel;
+      next[stepIndex] = nextLevel;
       return next;
     });
   }
@@ -205,7 +204,6 @@ export default function MetronomePanel({ copy }: MetronomePanelProps) {
     return copy.medium;
   }
 
-  const totalSteps = beatsPerBar * subdivision;
   const stepStates =
     totalSteps === activeStep + 1 && !isRunning
       ? initialBeatStates
@@ -296,7 +294,10 @@ export default function MetronomePanel({ copy }: MetronomePanelProps) {
               onClick={() => cycleAccent(index)}
               type="button"
             >
-              <span>{index + 1}</span>
+              <span>
+                {Math.floor(index / subdivision) + 1}
+                {subdivision > 1 ? `.${(index % subdivision) + 1}` : ""}
+              </span>
               <strong>{accentLabel(level)}</strong>
             </button>
           ))}
@@ -305,8 +306,7 @@ export default function MetronomePanel({ copy }: MetronomePanelProps) {
 
       <div className="pulse-grid" role="presentation">
         {stepStates.map((step) => {
-          const beatIndex = Math.floor(step / subdivision);
-          const accent = accentPattern[beatIndex] ?? "medium";
+          const accent = accentPattern[step] ?? "medium";
           const isCurrent = isRunning && step === activeStep;
           const isBeat = step % subdivision === 0;
 
